@@ -1,4 +1,4 @@
-import { getCookie } from './cookieManager.js';
+import { getCookie } from './cookieUtil.js';
 
 const socket = io();
 const user = JSON.parse(getCookie('user'));
@@ -18,8 +18,12 @@ socket.on('error', (err) => {
     console.error(err);
 });
 
-socket.on('messageReceived', (user, msg, pic) => { 
+socket.on('messageReceived', (user, msg, pic, old) => { 
     addMessage(user, msg, pic);
+    if (old) {
+        // scroll to bottom of page
+        window.scrollTo(0,document.body.scrollHeight);
+    }
 });
 
 document.getElementById('message').addEventListener('keyup', function(e) {
@@ -33,6 +37,9 @@ document.getElementById('message').addEventListener('keyup', function(e) {
 
 function addMessage(user, msg, pic) {
     let messages = document.querySelector('.messages');
+    /**
+     * @type {HTMLDivElement}
+     */
     let message = document.createElement('div');
 
     let profile = document.createElement('div');

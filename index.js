@@ -5,6 +5,19 @@ const http = require('http').createServer(app);
 const socket = require('socket.io');
 const io = socket(http);
 
+const sanitizeMarkdown = require('./markdown.js');
+
+const multer = require('multer');
+const storage = multer.diskStorage({
+    destination: function(req, file, cb) {
+        cb(null, 'public/profile/')
+    },
+    filename: function(req, file, cb) {
+        cb(null, file.fieldname + '-' + Date.now())
+    }
+});
+const upload = multer({storage});
+
 const bcrypt = require('bcrypt');
 const fs = require('fs');
 
@@ -40,27 +53,15 @@ app.use(express.static('public'));
 app.post('/api/user/register/', (req, res) => {
     const { username, password } = req.body;
 
-    if(!username || !password) {
-        res.status(400).send({ message: 'Missing username or password' });
-        return;
-    }
-
-    if(username.length < 3) {
-        res.status(400).send({ message: 'Username too short' });
-        return;
-    }
-
-    if(username.match(/[^a-zA-Z0-9_!&]/)) {
-        res.status(400).send({ message: 'Username contains disallowed characters' });
-        return;
-    }
+    if(runChecks(username, password)) return;
 
     const salt = bcrypt.genSaltSync(10);
     const hash = bcrypt.hashSync(password, salt);
 
     const user = {
         username,
-        password: hash
+        password: hash,
+        profile: './profile/defualt.png'
     };
 
     if(users.find(u => u.username === username)) {
@@ -83,20 +84,7 @@ app.post('/api/user/register/', (req, res) => {
 app.post('/api/user/login/', (req, res) => {
     const { username, password } = req.body;
 
-    if(!username || !password) {
-        res.status(400).send({ message: 'Missing username or password' });
-        return;
-    }
-
-    if(username.length < 3) {
-        res.status(400).send({ message: 'Username too short' });
-        return;
-    }
-
-    if(username.match(/[^a-zA-Z0-9_!&]/)) {
-        res.status(400).send({ message: 'Username contains disallowed characters' });
-        return;
-    }
+    if(runChecks(username, password)) return;
 
     const user = users.find(u => u.username === username);
 
@@ -116,23 +104,45 @@ app.post('/api/user/login/', (req, res) => {
 app.post('/api/user/request/', (req, res) => {
     const { username, password } = req.body;
 
-    if(!username || !password) {
-        res.status(400).send({ message: 'Missing username or password' });
-        return;
-    }
-
-    if(username.length < 3) {
-        res.status(400).send({ message: 'Username too short' });
-        return;
-    }
-
-    if(username.match(/[^a-zA-Z0-9_!&]/)) {
-        res.status(400).send({ message: 'Username contains disallowed characters' });
-        return;
-    }
+    if(runChecks(username, password)) return;
 
     return login(username, password, res);
 });
+
+app.post('/api/user/request/self', (req, res) => {
+    const { username, password } = req.body;
+
+    if(runChecks(username, password)) return;
+    if(!login(username, password)) return res.status(401).send({ message: 'Invalid login' });
+
+    const user = users.find(u => u.username === username);
+
+    if(!user.profile) user.profile = './profile/defualt.png';
+
+    return res.status(200).send({ user, status: 200 });
+});
+
+app.post('/api/user/profile/update', upload.single('profile'), (req, res) => {
+    try {
+        let { username, password } = req.body;
+        let file = req.file;
+
+        if(runChecks(username, password)) return;
+        if(!login(username, password)) return res.status(401).send({ message: 'Invalid login' });
+
+        // rename the file exactly where it is to the username
+        fs.renameSync(file.path, `${file.destination}${username}.png`);
+
+        let user = users.find(u => u.username === username);
+        user.profile = `./profile/${username}.png`
+
+        fs.writeFileSync(`${privateDir}\\users\\${username}.json`, JSON.stringify(user));
+        return res.status(200).send({ message: 'Profile updated', user });
+    } catch(e) {
+        console.error(e)
+        return res.status(500).send({ message: 'Failed to update profile' });
+    }
+});    
 
 io.on('connection', (socket) => {
 
@@ -155,7 +165,7 @@ io.on('connection', (socket) => {
 
     socket.on('requestOldMessages', () => {
         for(const msg of chatMessages) {
-            socket.emit('messageReceived', msg.username, msg.msg, msg.profile);
+            socket.emit('messageReceived', msg.username, msg.msg, msg.profile, true);
         }
     });
 
@@ -171,7 +181,11 @@ io.on('connection', (socket) => {
             return;
         }
 
-        chatMessages.push({ username, msg, profile: './profile/defualt.png', created: Date.now() });
+        let profile = users.find(u => u.username === username).profile;
+
+        msg = sanitizeMarkdown(msg);
+
+        chatMessages.push({ username, msg, profile: !profile ? './profile/defualt.png' : profile, created: Date.now() });
         fs.writeFile(`${privateDir}\\chat.json`, JSON.stringify(chatMessages), (err) => {
             if (err) {
                 socket.emit('error', { type: "info", message: 'Failed to save message' });
@@ -179,7 +193,7 @@ io.on('connection', (socket) => {
             }
         });
 
-        io.emit('messageReceived', username, msg, './profile/defualt.png');
+        io.emit('messageReceived', username, msg, !profile ? './profile/defualt.png' : profile);
     });
 
     socket.on('disconnect', () => {
@@ -208,6 +222,20 @@ function login(username, password, res) {
 
     if(res) return res.status(200).send({ message: `Successful login to ${user.username}`, user });
     else return true;
+}
+
+function runChecks(username, password, res) {
+    if(!username || !password) {
+        return res.status(400).send({ message: 'Missing username or password' });
+    }
+
+    if(username.length < 3) {
+        return res.status(400).send({ message: 'Username too short' });
+    }
+
+    if(username.match(/[^a-zA-Z0-9_!&]/)) {
+        return res.status(400).send({ message: 'Username contains disallowed characters' });
+    }
 }
 
 app.use((req, res) => res.status(404).sendFile(__dirname + '\\public\\404.html'));

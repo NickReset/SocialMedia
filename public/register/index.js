@@ -1,4 +1,4 @@
-import { createCookie } from "../js/cookieManager.js";
+import { createCookie } from "../js/cookieUtil.js";
 import { createLoadingScreen, removeLoadingScreen } from "../js/loadingScreen.js";
 
 const serverRespone = document.getElementById("serverRespone");

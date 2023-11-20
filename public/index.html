@@ -4,10 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="styles.css">
-    <title>Chat</title>
+    <title>Divine | Chat</title>
 </head>
 <body>
+
     <div class="chat-box">
+        <div class="chat-header">
+            <p id="title">Divine</p>
+
+            <div class="profileEditor">
+                <p id="profileName">Not Loaded</p>
+                <img src="./profile/defualt.png" id="profilePic">
+            </div>
+
+        </div>
+
+        <div class="userSettings">
+            <div class="imageEditor">
+                <p>Profile Picture</p>
+                <input type="file" id="profileImage">
+                <img id="uploadedImg">
+
+                <button id="saveProfile" style="display: none;">Save</button>
+            </div>
+        </div>
+
         <div class="chat-body">
             <div class="messages"></div>
         </div>
@@ -16,9 +37,64 @@
         </div>
     </div>
 
+
     <style>
         * {
             box-sizing: border-box;
+        }
+
+        .userSettings {
+            display: none;
+            background-color: #181616;
+            border-radius: 2em;
+            height: 30vh;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: absolute;
+            margin-left: auto;
+            margin-right: 0;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+
+            margin-top: 5em;
+            margin-inline: 5em;
+            right: 0;
+            width: 20em;
+            color: white;
+        }
+
+        .imageEditor {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+
+        .imageEditor input[type=file] {
+            background-color: #171414;
+            color: white;
+            padding: 0.5rem;
+            font-family: sans-serif;
+            border-radius: 0.3rem;
+            cursor: pointer;
+            margin-top: 1rem;
+            border: none;
+
+            /* drop shadow */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .imageEditor #saveProfile {
+            background-color: #171414;
+            color: white;
+            padding: 0.5rem;
+            font-family: sans-serif;
+            border-radius: 0.3rem;
+            cursor: pointer;
+            margin-top: 1rem;
+            border: none;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
         }
 
         body {
@@ -54,23 +130,6 @@
             width: 100%;
         }
 
-        .chat-footer input[type=text] {
-            appearance: none;
-            border: none;
-            outline: none;
-            border-bottom: 2px solid #1c1c1c;
-            background: rgba(#ccc, .2);
-            border-radius: .2em .2em 0 0;
-            color: #ccc;
-
-            caret-color: white;
-            background-color: #181616;
-
-            padding: 9px;
-            font-size: 20px;
-            width: 100%;
-        }
-
         .messages {
             display: flex;
             flex-direction: column;
@@ -103,10 +162,71 @@
             color: #ccc;
             font-size: 15px;
         }
+
+        .chat-header {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1em;
+            background-color: #181616;
+            border-radius: 2em;
+            width: 90%;
+            align-self: center;
+        }
+
+        .chat-header .profileEditor {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            margin-left: auto;
+        }
+
+        .chat-header .profileEditor img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #181616;
+            justify-content: center;
+            margin-left: 10px;
+            text-align: center;
+        }
+
+        .chat-header .profileEditor img:hover {
+            border: 2px solid blue;
+        }
+
+        .chat-header .profileEditor #profileName {
+            color: #ccc;
+            font-size: 20px;
+            margin-left: 10px;
+        }
+
+
+        .chat-footer input[type=text] {
+            appearance: none;
+            border: none;
+            border-bottom: 2px solid #1c1c1c;
+            background: rgba(#ccc, .2);
+            color: #ccc;
+
+            caret-color: white;
+            background-color: #181616;
+
+            padding: 9px;
+            font-size: 20px;
+            width: 100%;
+
+            border-top: .2px solid white;
+        }
+
+        .chat-header #title {
+            color: #ccc;
+            font-size: 20px;
+        }
     </style>
 
-
-    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js" crossorigin="anonymous"></script>
     <script type="module" src="./index.js"></script>
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js" crossorigin="anonymous"></script>
 </body>
 </html>
